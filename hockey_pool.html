@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>2026 Hockey Playoff Pool</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      width: 100%;
+      -webkit-text-size-adjust: 100%;
+      text-size-adjust: 100%;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f4f4f5; color: #1a1a1a; padding: 1rem 0.5rem;
+    }
+    #root { width: 100%; max-width: 640px; margin: 0 auto; }
+    .pool-title { font-size: clamp(16px, 4vw, 20px); font-weight: 500; margin: 0 0 4px; color: #111; text-align: center; }
+    .pool-sub   { font-size: clamp(11px, 2.5vw, 12px); color: #666; margin: 0 0 12px; text-align: center; }
+    .team-card {
+      background: #fff; border: 1px solid #e2e2e2;
+      border-radius: 10px; margin-bottom: 6px; overflow: hidden;
+    }
+    .team-card.open { border-color: #bbb; }
+    .team-header {
+      display: flex; align-items: center; gap: 8px;
+      padding: 9px 12px; cursor: pointer; user-select: none;
+      background: #fff;
+    }
+    .team-header:hover { background: #f7f7f7; }
+    .rank-badge {
+      width: 26px; height: 26px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 500; flex-shrink: 0;
+    }
+    .rank-1     { background: #fde68a; color: #78350f; }
+    .rank-2     { background: #e5e7eb; color: #374151; }
+    .rank-other { background: #f3f4f6; color: #6b7280; }
+    .team-name { font-size: clamp(12px, 3vw, 14px); font-weight: 500; color: #111; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .team-pts  { font-size: clamp(11px, 2.5vw, 13px); color: #555; margin-right: 4px; white-space: nowrap; flex-shrink: 0; }
+    .chevron { font-size: 10px; color: #aaa; transition: transform 0.2s; flex-shrink: 0; }
+    .team-card.open .chevron { transform: rotate(180deg); }
+    .roster-panel { border-top: 1px solid #e8e8e8; display: none; background: #fafafa; }
+    .team-card.open .roster-panel { display: block; }
+    .roster-row {
+      display: flex; align-items: center; gap: 6px;
+      padding: 6px 12px; border-bottom: 1px solid #f0f0f0;
+    }
+    .roster-row:last-child { border-bottom: none; }
+    .player-pos  { font-size: 11px; color: #999; width: 22px; flex-shrink: 0; font-weight: 500; letter-spacing: 0.03em; }
+    .player-name { font-size: clamp(11px, 2.8vw, 13px); color: #222; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .nhl-bubble {
+      display: inline-block; font-size: 10px; font-weight: 700;
+      padding: 2px 5px; border-radius: 20px;
+      letter-spacing: 0.03em; flex-shrink: 0; width: 38px;
+      text-align: center;
+    }
+    .player-pts  { font-size: clamp(11px, 2.5vw, 12px); font-weight: 500; color: #333; min-width: 34px; text-align: right; flex-shrink: 0; }
+    .elim-tag {
+      font-size: 10px; padding: 2px 5px; border-radius: 4px;
+      background: #fee2e2; color: #991b1b; font-weight: 500; flex-shrink: 0;
+    }
+    .elim-spacer { width: 30px; flex-shrink: 0; }
+    .roster-row.eliminated .player-name { text-decoration: line-through; color: #aaa; }
+    .roster-row.eliminated .player-pts  { color: #bbb; }
+    .roster-row.eliminated .nhl-bubble  { opacity: 0.4; }
+    .legend { margin-top: 10px; display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 11px; color: #888; }
+    .legend-sample { text-decoration: line-through; color: #bbb; font-size: 11px; }
+    .error-msg { color: #991b1b; font-size: 13px; padding: 1rem 0; text-align: center; }
+  </style>
+</head>
+<body>
+
+<div id="root">
+  <p class="pool-title">🏒 2026 Hockey Playoff Pool</p>
+  <p class="pool-sub">Click a team to see their roster</p>
+  <div id="standings"></div>
+  <div class="legend">
+    <span class="legend-sample">Player Name</span> = team eliminated
+  </div>
+</div>
+
+<script>
+  (function() {
+    var mv = document.querySelector('meta[name="viewport"]');
+    if (!mv) { mv = document.createElement('meta'); mv.name = 'viewport'; document.head.appendChild(mv); }
+    mv.content = 'width=device-width, initial-scale=1.0';
+  })();
+
+  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzgpGUaISZ6JntUehhVzwYB1N55fXJud_PfjUX3e6HSyH5O_yRNPNvTVXGtkGxKz8uW/exec";
+  const MAX_TEAMS = 9;
+
+  const NHL_COLOURS = {
+    ANA: { bg: '#F47A38', text: '#fff' },
+    ARI: { bg: '#8C2633', text: '#E2D6B5' },
+    BOS: { bg: '#FFB81C', text: '#000' },
+    BUF: { bg: '#003087', text: '#FFB81C' },
+    CAR: { bg: '#CC0000', text: '#fff' },
+    CBJ: { bg: '#002654', text: '#CE1126' },
+    CGY: { bg: '#C8102E', text: '#F1BE48' },
+    CHI: { bg: '#CF0A2C', text: '#fff' },
+    COL: { bg: '#6F263D', text: '#236192' },
+    DAL: { bg: '#006847', text: '#8F8F8C' },
+    DET: { bg: '#CE1126', text: '#fff' },
+    EDM: { bg: '#041E42', text: '#FF4C00' },
+    FLA: { bg: '#041E42', text: '#C8102E' },
+    LAK: { bg: '#111',    text: '#A2AAAD' },
+    MIN: { bg: '#154734', text: '#A6192E' },
+    MTL: { bg: '#AF1E2D', text: '#192168' },
+    NSH: { bg: '#FFB81C', text: '#041E42' },
+    NJD: { bg: '#CE1126', text: '#000' },
+    NYI: { bg: '#003087', text: '#FC4C02' },
+    NYR: { bg: '#0038A8', text: '#CE1126' },
+    OTT: { bg: '#C2912C', text: '#000' },
+    PHI: { bg: '#F74902', text: '#fff' },
+    PIT: { bg: '#000',    text: '#FCB514' },
+    SEA: { bg: '#001628', text: '#99D9D9' },
+    SJS: { bg: '#006D75', text: '#fff' },
+    STL: { bg: '#002F87', text: '#FCB514' },
+    TBL: { bg: '#002868', text: '#fff' },
+    TOR: { bg: '#00205B', text: '#fff' },
+    UTA: { bg: '#69B3E7', text: '#000' },
+    VAN: { bg: '#00843D', text: '#00205B' },
+    VGK: { bg: '#B4975A', text: '#333F48' },
+    WSH: { bg: '#041E42', text: '#C8102E' },
+    WPG: { bg: '#041E42', text: '#AC162C' },
+  };
+
+  function teamBubble(abbr) {
+    const c = NHL_COLOURS[abbr] || { bg: '#e5e7eb', text: '#374151' };
+    return `<span class="nhl-bubble" style="background:${c.bg};color:${c.text}">${abbr}</span>`;
+  }
+
+  function rankClass(r) {
+    if (r === 1) return 'rank-1';
+    if (r === 2) return 'rank-2';
+    return 'rank-other';
+  }
+
+  function render(data) {
+    const teams = data.slice(0, MAX_TEAMS);
+    document.getElementById('standings').innerHTML = teams.map(t => `
+      <div class="team-card" id="card-${t.rank}">
+        <div class="team-header" onclick="toggleCard(${t.rank})">
+          <div class="rank-badge ${rankClass(t.rank)}">${t.rank}</div>
+          <span class="team-name">${t.team}</span>
+          <span class="team-pts">${t.pts} pts</span>
+          <span class="chevron">&#9660;</span>
+        </div>
+        <div class="roster-panel">
+          ${t.roster.map(p => `
+            <div class="roster-row ${p.eliminated ? 'eliminated' : ''}">
+              <span class="player-pos">${p.pos}</span>
+              <span class="player-name">${p.name}</span>
+              ${teamBubble(p.nhlTeam)}
+              ${p.eliminated ? '<span class="elim-tag">ELIM</span>' : '<span class="elim-spacer"></span>'}
+              <span class="player-pts">${p.pts} pts</span>
+            </div>`).join('')}
+        </div>
+      </div>`).join('');
+  }
+
+  function toggleCard(rank) {
+    document.getElementById('card-' + rank).classList.toggle('open');
+  }
+
+  fetch(SCRIPT_URL)
+    .then(res => res.json())
+    .then(data => render(data))
+    .catch(() => {
+      document.getElementById('standings').innerHTML =
+        '<p class="error-msg">Could not load pool data. Check your Apps Script URL.</p>';
+    });
+</script>
+
+</body>
+</html>
