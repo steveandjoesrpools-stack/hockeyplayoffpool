@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -68,6 +69,12 @@
     .legend { margin-top: 10px; display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 11px; color: #888; }
     .legend-sample { text-decoration: line-through; color: #bbb; font-size: 11px; }
     .error-msg { color: #991b1b; font-size: 13px; padding: 1rem 0; text-align: center; }
+    .rules { margin-top: 20px; background: #fff; border: 1px solid #e2e2e2; border-radius: 10px; padding: 12px 16px; }
+    .rules-title { font-size: 13px; font-weight: 500; color: #111; margin-bottom: 10px; }
+    .rules-grid { display: flex; flex-direction: column; gap: 7px; }
+    .rule-item { display: flex; align-items: flex-start; gap: 8px; }
+    .rule-icon { font-size: 13px; flex-shrink: 0; width: 18px; }
+    .rule-text { font-size: 12px; color: #555; line-height: 1.4; }
   </style>
 </head>
 <body>
@@ -76,6 +83,15 @@
   <p class="pool-title">🏒 2026 Hockey Playoff Pool</p>
   <p class="pool-sub">Click a team to see their roster</p>
   <div id="standings"></div>
+  <div class="rules">
+    <p class="rules-title">Pool Rules</p>
+    <div class="rules-grid">
+      <div class="rule-item"><span class="rule-icon">⛸</span><span class="rule-text">10 Skaters, 1 Goalie per roster</span></div>
+      <div class="rule-item"><span class="rule-icon">🏒</span><span class="rule-text">Skaters score Goals + Assists</span></div>
+      <div class="rule-item"><span class="rule-icon">🥅</span><span class="rule-text">Goalies score 1pt per Win + 3pts per Shutout</span></div>
+      <div class="rule-item"><span class="rule-icon">🔀</span><span class="rule-text">Must have players from at least 4 different teams</span></div>
+    </div>
+  </div>
   <div class="legend">
     <span class="legend-sample">Player Name</span> = team eliminated
   </div>
