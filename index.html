@@ -174,5 +174,16 @@
     });
 </script>
 
+<script>
+  function reportHeight() {
+    var scale = window.outerWidth / window.innerWidth;
+    var height = Math.ceil(document.body.scrollHeight * scale);
+    window.parent.postMessage({ type: 'height', height: height }, '*');
+    window.parent.postMessage(height, '*');
+  }
+  window.addEventListener('load', reportHeight);
+  window.addEventListener('resize', reportHeight);
+</script>
+
 </body>
 </html>
